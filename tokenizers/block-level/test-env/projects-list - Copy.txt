@@ -1,0 +1,3 @@
+test-env/2Shirt-SpellBurner.zip
+test-env/2xyo-indicator-ip.zip
+test-env/3demax-Take-a-break.zip
