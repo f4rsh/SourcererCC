@@ -10,7 +10,8 @@ import hashlib
 import datetime as dt
 import zipfile
 import extractPythonFunction
-import extractJavaFunction
+#import extractJavaFunction
+import extractCppFunction
 import io
 
 try:
@@ -177,8 +178,10 @@ def tokenize_blocks(file_string, comment_inline_pattern, comment_open_close_patt
   SLOC      = 'ERROR'
   if '.py' in file_extensions:
     (block_linenos, blocks) = extractPythonFunction.getFunctions(file_string, logging, file_path)
-  if '.java' in file_extensions:
-    (block_linenos, blocks, block_names) = extractJavaFunction.getFunctions(file_string, logging, file_path, separators, comment_inline_pattern)
+  #if '.java' in file_extensions:
+    #(block_linenos, blocks, block_names) = extractJavaFunction.getFunctions(file_string, logging, file_path, separators, comment_inline_pattern)
+  if '.cpp' in file_extensions:
+    (block_linenos, blocks) = extractCppFunction.getFunctions(file_string, logging, file_path)
 
   if block_linenos is None:
     logging.info('Returning None on tokenize_blocks for file %s.' % (file_path))
