@@ -34,7 +34,7 @@ def getFunctions(filestring, logging, file_path):
         logging.warning("File " + file_path + " successfully parsed.")
         return(func_lines,func_bodies)
 '''
-path="file.cpp"
+path="null_pointer.c"
 fileopen = open(path)
 file = fileopen.read()
 print(getFunctions(file, logging, path))

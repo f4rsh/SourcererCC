@@ -178,9 +178,7 @@ def tokenize_blocks(file_string, comment_inline_pattern, comment_open_close_patt
   SLOC      = 'ERROR'
   if '.py' in file_extensions:
     (block_linenos, blocks) = extractPythonFunction.getFunctions(file_string, logging, file_path)
-  #if '.java' in file_extensions:
-    #(block_linenos, blocks, block_names) = extractJavaFunction.getFunctions(file_string, logging, file_path, separators, comment_inline_pattern)
-  if '.cpp' in file_extensions:
+  if '.c' in file_extensions:
     (block_linenos, blocks) = extractCppFunction.getFunctions(file_string, logging, file_path)
 
   if block_linenos is None:
@@ -307,7 +305,7 @@ def process_file_contents(file_string, proj_id, file_id, container_path,
   file_count += 1
 
   if (project_format == 'zipblocks') or (project_format == 'folderblocks'):
-    (final_stats, blocks_data, file_parsing_times) = tokenize_blocks(file_string, comment_inline_pattern, comment_open_close_pattern, separators, logging, os.path.join(container_path, file_path))
+    (final_stats, blocks_data, file_parsing_times) = tokenize_blocks(file_string, comment_inline_pattern, comment_open_close_pattern, separators, logging, file_path)
     if (final_stats is None) or (blocks_data is None) or (file_parsing_times is None):
       logging.warning('Problems tokenizing file ' + os.path.join(container_path, file_path))
       return [0, 0, 0, 0, 0]
@@ -375,8 +373,13 @@ def process_regular_folder(process_num, zip_file, proj_id, proj_path, proj_url, 
 
   logging.info('Attempting to process_regular_folder '+proj_path)
 
-  result = [f for dp, dn, filenames in os.walk(proj_path) for f in filenames if (os.path.splitext(f)[1] in file_extensions)]
-
+  #result = [f for dp, dn, filenames in os.walk(proj_path) for f in filenames if (os.path.splitext(f)[1] in file_extensions)]
+  result = []
+  for cur_path, directories, files in os.walk(proj_path):
+    for file in files:
+      if (os.path.splitext(file)[1] in file_extensions):
+        result.append(os.path.join(cur_path,file))
+        
   for file_path in result:
     # This is very strange, but I did find some paths with newlines,
     # so I am simply ignoring them
@@ -389,8 +392,8 @@ def process_regular_folder(process_num, zip_file, proj_id, proj_path, proj_url, 
     my_file    = None
     file_bytes = None
     try:
-      my_file    = io.open(os.path.join(proj_path,file_path),encoding='ascii',errors='ignore')
-      file_bytes = str(os.stat(os.path.join(proj_path,file_path)).st_size)
+      my_file    = io.open(file_path,encoding='ascii',errors='ignore')
+      file_bytes = str(os.stat(file_path).st_size)
     except Exception as e:
       logging.warning('Unable to open file (1) <'+file_path+'> (process '+str(process_num)+')' + str(e))
       continue
