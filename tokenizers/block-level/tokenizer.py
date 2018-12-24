@@ -304,7 +304,7 @@ def process_file_contents(file_string, proj_id, file_id, container_path,
   global file_count
   file_count += 1
 
-  if (project_format == 'zipblocks') or (project_format == 'folderblocks'):
+  if (project_format == 'folderblocks'):
     (final_stats, blocks_data, file_parsing_times) = tokenize_blocks(file_string, comment_inline_pattern, comment_open_close_pattern, separators, logging, file_path)
     if (final_stats is None) or (blocks_data is None) or (file_parsing_times is None):
       logging.warning('Problems tokenizing file ' + os.path.join(container_path, file_path))
@@ -428,192 +428,12 @@ def process_regular_folder(process_num, zip_file, proj_id, proj_path, proj_url, 
   logging.info('Successfully ran process_regular_folder '+zip_file)
   return (zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time)
 
-      
-
-def process_tgz_ball(process_num, tar_file, proj_id, proj_path, proj_url, base_file_id, 
-            FILE_tokens_file, FILE_bookkeeping_proj, FILE_stats_file, logging):
-  zip_time = file_time = string_time = tokens_time = hash_time = write_time = regex_time = 0
-
-  try:
-    with tarfile.open(tar_file,'r|*') as my_tar_file:
-
-      for f in my_tar_file:
-        if not f.isfile():
-          continue
-        
-        file_path = f.name
-        # Filter by the correct extension
-        if not os.path.splitext(f.name)[1] in file_extensions:
-          continue
-        
-        # This is very strange, but I did find some paths with newlines,
-        # so I am simply ignoring them
-        if '\n' in file_path:
-          continue
-
-        file_id = process_num*MULTIPLIER + base_file_id + file_count
-
-        file_bytes=str(f.size)
-
-        z_time = dt.datetime.now();
-        try:
-          myfile = my_tar_file.extractfile(f)
-        except:
-          logging.warning('Unable to open file (1) <'+proj_id+','+str(file_id)+','+os.path.join(tar_file,file_path)+
-                  '> (process '+str(process_num)+')')
-          continue
-        zip_time += (dt.datetime.now() - z_time).microseconds
-
-        if myfile is None:
-          logging.warning('Unable to open file (2) <'+proj_id+','+str(file_id)+','+os.path.join(tar_file,file_path)+
-                  '> (process '+str(process_num)+')')
-          continue
-
-        f_time = dt.datetime.now()
-        file_string = myfile.read()
-        file_time += (dt.datetime.now() - f_time).microseconds
-
-        times = process_file_contents(file_string, proj_id, file_id, tar_file, file_path, file_bytes,
-                        proj_url, FILE_tokens_file, FILE_stats_file, logging)
-        string_time += times[0]
-        tokens_time += times[1]
-        write_time  += times[4]
-        hash_time   += times[2]
-        regex_time  += times[3]
-
-#                if (file_count % 50) == 0:
-#                    logging.info('Zip: %s Read: %s Separators: %s Tokens: %s Write: %s Hash: %s regex: %s', 
-#                                 zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time)
-
-  except Exception as e:
-    logging.warning('Unable to open tar on <'+proj_id+','+proj_path+'> (process '+str(process_num)+')')
-    logging.warning(e)
-    return
-
-  return (zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time)
-
-def process_zip_ball(process_num, zip_file, proj_id, proj_path, proj_url, base_file_id, 
-            FILE_tokens_file, FILE_bookkeeping_proj, FILE_stats_file, logging):
-  zip_time = file_time = string_time = tokens_time = hash_time = write_time = regex_time = 0
-
-  logging.info('Attempting to process_zip_ball '+zip_file)
-
-  try:
-    with zipfile.ZipFile(proj_path,'r') as my_file:
-
-      for file in my_file.infolist():
-
-        if not os.path.splitext(file.filename)[1] in file_extensions:
-          continue
-
-        file_path = file.filename
-
-        # This is very strange, but I did find some paths with newlines,
-        # so I am simply ignoring them
-        if '\n' in file_path:
-          continue
-
-        file_id = process_num*MULTIPLIER + base_file_id + file_count
-
-        file_bytes=str(file.file_size)
-
-        z_time = dt.datetime.now();
-        try:
-          my_zip_file = my_file.open(file.filename,'r')
-        except:
-          logging.warning('Unable to open file (1) <'+os.path.join(proj_path,file)+'> (process '+str(process_num)+')')
-          continue
-        zip_time += (dt.datetime.now() - z_time).microseconds
-
-        if my_zip_file is None:
-          logging.warning('Unable to open file (2) <'+os.path.join(proj_path,file)+'> (process '+str(process_num)+')')
-          continue
-
-        try:
-          f_time      = dt.datetime.now()
-          file_string = my_zip_file.read().decode("utf-8",'ignore')
-          file_time   += (dt.datetime.now() - f_time).microseconds
-
-          times = process_file_contents(file_string, proj_id, file_id, zip_file, file_path, file_bytes,
-                          proj_url, FILE_tokens_file, FILE_stats_file, logging)
-        except Exception as e:
-          logging.warning('Unable to read contents of file %s' % (os.path.join(proj_path,file)))
-
-        string_time += times[0]
-        tokens_time += times[1]
-        write_time  += times[4]
-        hash_time   += times[2]
-        regex_time  += times[3]
-
-#                if (file_count % 50) == 0:
-#                    logging.info('Zip: %s Read: %s Separators: %s Tokens: %s Write: %s Hash: %s regex: %s', 
-#                                 zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time)
-
-  except Exception as e:
-    logging.warning('Unable to open zip on <'+proj_path+'> (process '+str(process_num)+')')
-    logging.warning(e)
-    return
-
-  logging.info('Successfully ran process_zip_ball '+zip_file)
-  return (zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time)
 
 def process_one_project(process_num, proj_id, proj_path, base_file_id, 
             FILE_tokens_file, FILE_bookkeeping_proj, FILE_stats_file, logging, project_format):
 
   p_start = dt.datetime.now()
-
-  if project_format == 'leidos':
-    proj_path, proj_url = proj_path
-
-    logging.info('Starting leidos project <'+proj_id+','+proj_path+'> (process '+str(process_num)+')')
-
-    if not os.path.isdir(proj_path):
-      logging.warning('Unable to open project <'+proj_id+','+proj_path+'> (process '+str(process_num)+')')
-      return
-
-    # Search for tar files with _code in them
-    tar_files = [os.path.join(proj_path, f) for f in os.listdir(proj_path) if os.path.isfile(os.path.join(proj_path, f))]
-    tar_files = [f for f in tar_files if '_code' in f]
-    if(len(tar_files) != 1):
-      logging.warning('Tar not found on <'+proj_id+','+proj_path+'> (process '+str(process_num)+')')
-      times = [0,0,0,0,0,0]
-      os.path.walk(proj_path, process_regular_folder, 
-             (process_num, proj_id, proj_path, proj_url, base_file_id, 
-              FILE_tokens_file, FILE_bookkeeping_proj, FILE_stats_file, logging, times))
-      file_time, string_time, tokens_time, write_time, hash_time, regex_time = times
-      zip_time = 0
-    else:
-      tar_file = tar_files[0]
-      times = process_tgz_ball(process_num, tar_file, proj_id, proj_path, proj_url, base_file_id, 
-                   FILE_tokens_file, FILE_bookkeeping_proj, FILE_stats_file, logging)
-    if times is not None:
-      zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time = times
-    else:
-      zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time = (-1,-1,-1,-1,-1,-1,-1)
-
-    FILE_bookkeeping_proj.write(proj_id+',\"'+proj_path+'\",\"'+proj_url+'\"\n')
-
-  if project_format in ['zipblocks']:
-    proj_url = 'NULL'
-    
-    proj_id = str(proj_id_flag) + proj_id
-
-    logging.info('Starting zip project <'+proj_id+','+proj_path+'> (process '+str(process_num)+')')
-
-    if not os.path.isfile(proj_path):
-      logging.warning('Unable to open project <'+proj_id+','+proj_path+'> (process '+str(process_num)+')')
-      return
-
-    zip_file = proj_path
-    times = process_zip_ball(process_num, zip_file, proj_id, proj_path, proj_url, base_file_id, 
-                 FILE_tokens_file, FILE_bookkeeping_proj, FILE_stats_file, logging)
-    if times is not None:
-      zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time = times
-    else:
-      zip_time, file_time, string_time, tokens_time, write_time, hash_time, regex_time = (-1,-1,-1,-1,-1,-1,-1)
-
-    FILE_bookkeeping_proj.write(proj_id+',\"'+proj_path+'\",\"'+proj_url+'\"\n')
-
+  
   if project_format in ['folderblocks']:
     proj_url = 'NULL'
     
@@ -708,10 +528,10 @@ def active_process_count(processes):
 if __name__ == '__main__':
 
   global project_format
-  project_format = sys.argv[1] # 'zipblocks' or 'folderblocks' (when want the blocks inside files)
+  project_format = sys.argv[1] # 'folderblocks' (when want the blocks inside files)
 
-  if project_format not in ['zipblocks','folderblocks']:
-    print("ERROR - Please insert archive format, 'zipblocks' or 'folderblocks'!")
+  if project_format not in ['folderblocks']:
+    print("ERROR - Please insert archive format, 'folderblocks'!")
     sys.exit()
 
   read_config()
@@ -726,13 +546,6 @@ if __name__ == '__main__':
     prio_proj_paths = zip(range(init_proj_id, len(prio_proj_paths)+init_proj_id), prio_proj_paths)
 
   proj_paths = []
-
-  if project_format in ['zipblocks']: # zipblocks will diverge the process flow on process_file()
-    print('\''+project_format+'\''+'format')
-    with open(FILE_projects_list) as f:
-      for line in f:
-        proj_paths.append(line[:-1])
-    proj_paths = list(zip(range(1, len(proj_paths)+1), proj_paths))
 
   if project_format in ['folderblocks']: # folderblocks will diverge the process flow on process_file()
     print('\''+project_format+'\''+'format')
