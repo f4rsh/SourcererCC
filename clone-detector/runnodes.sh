@@ -5,7 +5,7 @@ rootPATH=`dirname $scriptPATH`
 echo $rootPATH
 ant -buildfile $rootPATH/build.xml clean cdi
 mode="${1:-search}"
-num_nodes="${2:-50}"
+num_nodes="${2:-1}"
 threshold="${3:-8}"
 echo "*****************************************************"
 echo "running this script in $mode mode"
@@ -19,7 +19,7 @@ rm -f "$rootPATH/nodes_completed.txt"
 
 for i in $(seq 1 1 $num_nodes)
 do
-    java -Dproperties.rootDir="$rootPATH/" -Dproperties.location="$rootPATH/NODE_$i/sourcerer-cc.properties" -Dlog4j.configurationFile="$rootPATH/NODE_$i/log4j2.xml" -Xms6g -Xmx6g -XX:+UseCompressedOops -jar $rootPATH/dist/indexbased.SearchManager.jar $mode $threshold &
+    java -Dproperties.rootDir="$rootPATH/" -Dproperties.location="$rootPATH/NODE_$i/sourcerer-cc.properties" -Dlog4j.configurationFile="$rootPATH/NODE_$i/log4j2.xml" -Xms2g -Xmx2g -XX:+UseCompressedOops -jar $rootPATH/dist/indexbased.SearchManager.jar $mode $threshold &
     PIDS+="$! "
 done
 echo $PIDS
